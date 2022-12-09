@@ -34,7 +34,14 @@ bool personPrefersNewDog(std::vector<std::vector<int>> personPref, int person, i
 int dogMatchedToPerson(int person, std::map<int,int> matches)
 {
 	// Assessed, 1 mark.
-	return 0;
+	for(std::pair<int,int> pair : matches)
+	{
+		if(pair.second == person)
+		{
+			return pair.first;
+		}
+	}
+	return -1;
 }
 
 std::map<int, int> stableMarriage(std::vector<std::vector<int>> dogPref, std::vector<std::vector<int>> personPref)
