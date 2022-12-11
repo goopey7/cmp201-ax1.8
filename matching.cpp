@@ -16,17 +16,19 @@
 bool personPrefersNewDog(std::vector<std::vector<int>> personPref, int person, int dog1, int dog2)
 {
 	// Assessed, 1 mark.
-	int dog1Pos = std::find(personPref.begin(),personPref.end(),dog1) - personPref.begin();
-	int dog2Pos = std::find(personPref.begin(),personPref.end(),dog2) - personPref.begin();
-
-	if(dog1Pos < dog2Pos)
+	// which ever dog comes first in the person's preference list is the dog they prefer.
+	for(int i = 0; i < personPref[person].size(); i++)
 	{
-		return true;
+		if(personPref[person][i] == dog1)
+		{
+			return true;
+		}
+		else if(personPref[person][i] == dog2)
+		{
+			return false;
+		}
 	}
-	else
-	{
-		return false;
-	}
+	return false;
 }
 
 // helper function
@@ -44,32 +46,121 @@ int dogMatchedToPerson(int person, std::map<int,int> matches)
 	return -1;
 }
 
+// helper function
+// returns true if there is a dog that has not proposed to a person
+bool thereIsADogWhoHasNotProposedToAPerson(const std::map<int,std::map<int,int>>& dogProposals)
+{
+	for(int i=0; i < dogProposals.size(); i++)
+	{
+		for(int j=0; j < dogProposals.at(i).size(); j++)
+		{
+			if(dogProposals.at(i).at(j) == 0)
+			{
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+
 std::map<int, int> stableMarriage(std::vector<std::vector<int>> dogPref, std::vector<std::vector<int>> personPref)
 {
 	// Assessed, 3 marks.
 	
 	// Initialise all dogs and people to be free.
+
+	std::vector<bool> cuffedDogs;
+	for(int i=0; i<personPref[0].size(); i++)
+	{
+		cuffedDogs.push_back(false);
+	}
+
+	std::vector<bool> cuffedPeople;
+	for(int i=0; i<dogPref[0].size(); i++)
+	{
+		cuffedPeople.push_back(false);
+	}
+
 	// create counts of how many proposals each dog has made.
+	std::map<int,std::map<int,int>> dogProposals;
+	for(int i=0; i < personPref[0].size(); i++)
+	{
+		for(int j = 0; j < dogPref[0].size(); j++)
+		{
+			dogProposals[i][j] = 0;
+		}
+	}
+
+	// create a map of matches.
+	std::map<int,int> matches;
 	
 	// while a dog is free and hasn't proposed to everyone yet.
-	
+	while(std::find(cuffedDogs.begin(),cuffedDogs.end(),false) != cuffedDogs.end()
+			&& thereIsADogWhoHasNotProposedToAPerson(dogProposals))
+	{
 		// find the next free dog who still has a person to propose to
+		int freeDog = std::find(cuffedDogs.begin(),cuffedDogs.end(),false) - cuffedDogs.begin();
 		
 		// find the next person they haven't proposed to.
-		
-		// if the person is free..
+		int nextPerson = -1;
+		for(int person = 0; person < cuffedPeople.size(); person++)
+		{
+			if(dogProposals[freeDog][person] == 0)
+			{
+				nextPerson = person;
+				break;
+			}
+		}
 		
 		// Dog proposes to person -- increment proposal.
-		
-		// Either form new match, or compare with current match.
-		
+		dogProposals[freeDog][nextPerson]++;
+
+		// if the person is free..
+		if(!cuffedPeople[nextPerson])
+		{
 			// person is not matched, match dog and person
-			
+			matches[freeDog] = nextPerson;
+			cuffedPeople[nextPerson] = true;
+			cuffedDogs[freeDog] = true;
+		}
+		else
+		{
 			// person is already matched to dog2 (use helper function).
+			int dog2 = dogMatchedToPerson(nextPerson,matches);
+			if(personPrefersNewDog(personPref,nextPerson,freeDog,dog2))
+			{
 				// person prefers new dog, dog2 is unmatched, dog1 and person make new match.
-				// use helper function.
-				
-	return std::map<int, int>();
+				cuffedDogs[dog2] = false;
+				matches[freeDog] = nextPerson;
+				cuffedDogs[freeDog] = true;
+			}
+		}
+	}
+	return matches;
+}
+
+// helper to check if a marriage is stable or not
+bool isStableMarriage(const std::map<int,int>& matches, std::vector<std::vector<int>> dogPref, std::vector<std::vector<int>> personPref)
+{
+	for(int dog = 0; dog < personPref[0].size(); dog++)
+	{
+		// loop through each preferred person before the dog's match
+		int person = matches.at(dog); // get current dog's matched person. This is the index we stop before
+		int personIdx = std::find(personPref[dog].begin(),personPref[dog].end(),person) - personPref[dog].begin();
+		// all people perferred to dog's match
+		for(int i = 0; i < personIdx; i++)
+		{
+			int preferredPerson = personPref[dog][i];
+			int theirDog = matches.at(preferredPerson);
+			// if the other person prefers the dog to their own, return false.
+			if(personPrefersNewDog(personPref,preferredPerson,dog,theirDog))
+			{
+				return false;
+			}
+		}
+	}
+	return true;
 }
 
 int main()
@@ -99,6 +190,8 @@ int main()
 	{
 		std::cout << d.first << " was matched with " << d.second << ", ";
 	}
+
+	std::cout << "\nThis is " << (isStableMarriage(matches, dogPref, peoplePref) ? "NOT " : "") << "a stable marriage.\n";
 	std::cout << "\n";
 
 	// Test 2
@@ -132,6 +225,8 @@ int main()
 	{
 		std::cout << d.first << " was matched with " << d.second << ", ";
 	}
+
+	std::cout << "\nThis is " << (isStableMarriage(matches, dogPref, peoplePref) ? "NOT " : "") << "a stable marriage.\n";
 
 	return 0;
 }
